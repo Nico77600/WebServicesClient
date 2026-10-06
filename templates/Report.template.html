@@ -1,0 +1,597 @@
+<!doctype html>
+<!--
+    Web Services Client for Exchange - HTML template
+    Author  : Nicolas Fabert
+    Version : 1.0.0
+    Export-EomReport (src\EasOAuthMailbox.Report.ps1) copies this file and replaces seven markers, each
+    exactly once: TITLE (text), and SUMMARY, STEPS, FOLDERS, MESSAGES, POLICY, TRACE (JSON, in the
+    script blocks at the end of the body). Everything else is static: texts, colours and tabs can be
+    changed here. Same design system as Exchange Log Report and Purview DLP Report (--cp-* variables).
+-->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme = param === "light" || param === "dark" ? param : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef; --cp-bg-elevated: #fcfbf8; --cp-surface: #ffffff; --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede; --cp-border-strong: #919191; --cp-text: #242424; --cp-text-muted: #5c5c5c; --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b; --cp-accent-hover: #9a1a41; --cp-accent-soft: rgba(177, 31, 75, 0.08); --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a; --cp-danger: #dc2626; --cp-warning: #d97706; --cp-link: #0078d4;
+  --cp-success-soft: rgba(22,163,74,0.12); --cp-danger-soft: rgba(220,38,38,0.12); --cp-warning-soft: rgba(217,119,6,0.14); --cp-neutral-soft: rgba(120,120,120,0.12);
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12); --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a; --cp-bg-elevated: #343231; --cp-surface: #292929; --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747; --cp-border-strong: #5f5f5f; --cp-text: #dedede; --cp-text-muted: #919191; --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1; --cp-accent-hover: #fb7b91; --cp-accent-soft: rgba(253, 142, 161, 0.14); --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80; --cp-danger: #f87171; --cp-warning: #fbbf24; --cp-link: #4da6ff;
+  --cp-success-soft: rgba(74,222,128,0.14); --cp-danger-soft: rgba(248,113,113,0.16); --cp-warning-soft: rgba(251,191,36,0.16); --cp-neutral-soft: rgba(200,200,200,0.12);
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32); --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+* { box-sizing: border-box; }
+body { margin:0; padding:28px 32px; background:var(--cp-bg); color:var(--cp-text); font:14px "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+h1 { font-size:32px; font-weight:650; letter-spacing:-0.025em; margin:8px 0 12px; }
+h2 { font-size:18px; font-weight:600; margin:0 0 12px; }
+h3 { font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cp-accent); margin:18px 0 8px; }
+h3:first-of-type { margin-top:4px; }
+p { line-height:1.5; margin:8px 0; } .muted, small { color:var(--cp-text-muted); }
+a { color:var(--cp-link); } [hidden] { display:none !important; }
+header { position:relative; overflow:hidden; border:1px solid var(--cp-border); border-top:4px solid var(--cp-accent); border-radius:16px; padding:24px; margin-bottom:20px; background:linear-gradient(125deg,var(--cp-surface) 35%,var(--cp-accent-soft)); }
+header::before { content:""; position:absolute; width:280px; height:280px; right:-100px; top:-160px; border:40px solid var(--cp-highlight); border-radius:50%; pointer-events:none; }
+.hero-top { position:relative; display:flex; justify-content:space-between; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+#origin { color:var(--cp-accent); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; }
+.subtitle { color:var(--cp-text-muted); max-width:720px; }
+.period { min-width:280px; padding:12px 16px; border:1px solid var(--cp-border); border-radius:0.625rem; background:var(--cp-surface); }
+.label { font-size:11px; color:var(--cp-accent); font-weight:700; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:8px; }
+#period { font-size:13px; line-height:1.6; font-variant-numeric:tabular-nums; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin:20px 0 16px; position:relative; }
+.tile { position:relative; overflow:hidden; padding:18px 20px; border:1px solid var(--cp-border); border-radius:16px; background:var(--cp-surface); transition:transform 160ms ease,border-color 160ms ease; }
+.tile:hover { transform:translateY(-3px); border-color:var(--cp-accent); }
+.tile::after { content:""; position:absolute; width:80px; height:80px; right:-28px; bottom:-32px; border:14px solid var(--cp-highlight); border-radius:50%; pointer-events:none; }
+.tile-primary { background:linear-gradient(125deg,var(--cp-accent-hover),var(--cp-accent)); border-color:var(--cp-accent); color:var(--cp-accent-fg); }
+.tile-tinted { background:linear-gradient(135deg,var(--cp-surface),var(--cp-accent-soft)); }
+.tile-label { display:block; font-size:12px; font-weight:600; margin-bottom:12px; }
+.tile strong { display:block; font-size:32px; font-weight:650; letter-spacing:-0.025em; font-variant-numeric:tabular-nums; }
+.tile small { display:block; margin-top:8px; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .tile-primary small { color:var(--cp-accent-fg); }
+.tile-icon { position:absolute; top:16px; right:16px; width:20px; height:20px; opacity:0.7; }
+.statusbar { position:relative; display:flex; height:8px; border-radius:8px; overflow:hidden; background:var(--cp-border); }
+.statusbar span { display:block; height:100%; }
+.legend { position:relative; display:flex; flex-wrap:wrap; gap:16px; font-size:11px; color:var(--cp-text-muted); margin-top:8px; }
+.legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+section.block { background:var(--cp-surface); border:1px solid var(--cp-border); border-radius:16px; padding:20px; margin-bottom:20px; }
+.caption { font-size:12px; color:var(--cp-text-muted); margin:0 0 12px; }
+.scope { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.scope-card { padding:12px 14px; border:1px solid var(--cp-border); border-radius:12px; background:linear-gradient(160deg,var(--cp-surface) 55%,var(--cp-surface-soft)); min-width:0; }
+.scope-card span { display:block; color:var(--cp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; }
+.scope-card strong { display:block; margin-top:4px; font-weight:600; overflow-wrap:anywhere; }
+.scope-card strong.mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12.5px; }
+.scope-card em { display:block; margin-top:2px; font-style:normal; font-size:12px; color:var(--cp-text-muted); overflow-wrap:anywhere; }
+.timeline { list-style:none; margin:4px 0 0; padding:0 0 0 18px; border-left:2px solid var(--cp-border); }
+.timeline li { position:relative; margin:0 0 10px; padding:6px 10px 6px 8px; border-radius:10px; cursor:pointer; }
+.timeline li:hover { background:var(--cp-accent-soft); }
+.timeline li::before { content:""; position:absolute; left:-25px; top:11px; width:10px; height:10px; border-radius:50%; background:var(--cp-surface); border:2px solid var(--cp-accent); }
+.timeline li.ok::before { border-color:var(--cp-success); background:var(--cp-success); }
+.timeline li.warn::before { border-color:var(--cp-warning); background:var(--cp-warning); }
+.timeline li.bad::before { border-color:var(--cp-danger); background:var(--cp-danger); }
+.timeline li.skip::before { border-color:var(--cp-border-strong); width:8px; height:8px; left:-24px; }
+.timeline .what { font-weight:600; } .timeline li.skip .what { color:var(--cp-text-muted); font-weight:400; }
+.timeline .what::after { content:" \25B8"; color:var(--cp-text-muted); font-weight:400; }
+.timeline .metric { margin-left:8px; font-size:11px; color:var(--cp-text-muted); font-variant-numeric:tabular-nums; }
+.timeline .detail { font-size:13px; color:var(--cp-text-soft); overflow-wrap:anywhere; margin-top:2px; }
+.timeline li.bad .detail { color:var(--cp-danger); } .timeline li.warn .detail { color:var(--cp-text); }
+.pill { display:inline-block; padding:1px 9px; border-radius:999px; background:var(--cp-neutral-soft); color:var(--cp-text); font-size:12px; line-height:20px; font-weight:600; margin-left:8px; white-space:nowrap; }
+.pill.good { background:var(--cp-success-soft); color:var(--cp-success); } .pill.bad { background:var(--cp-danger-soft); color:var(--cp-danger); } .pill.warn { background:var(--cp-warning-soft); color:var(--cp-warning); }
+td .pill { margin-left:0; }
+.tabs { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px; border-bottom:1px solid var(--cp-border); }
+.tabs button { border:0; border-bottom:3px solid transparent; border-radius:0; background:none; padding:10px 14px; font-weight:600; color:var(--cp-text-muted); }
+.tabs button.active { color:var(--cp-accent); border-bottom-color:var(--cp-accent); }
+.tabs .count { font-weight:400; font-size:12px; margin-left:6px; color:var(--cp-text-muted); }
+input, button, select { font:inherit; color:var(--cp-text); background:var(--cp-surface); border:1px solid var(--cp-border); padding:7px 10px; border-radius:0.625rem; }
+button { cursor:pointer; } button:disabled { color:var(--cp-text-muted); cursor:default; }
+button:not(:disabled):hover { color:var(--cp-accent); border-color:var(--cp-accent); }
+.primary-button { background:var(--cp-accent); color:var(--cp-accent-fg); border-color:var(--cp-accent); }
+.primary-button:not(:disabled):hover { background:var(--cp-accent-hover); color:var(--cp-accent-fg); }
+:focus-visible { outline:2px solid var(--cp-accent); outline-offset:2px; }
+.controls { display:flex; gap:8px 12px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+.controls label { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; }
+#search { width:min(420px,65vw); font-weight:400; }
+.scroll { overflow:auto; max-height:60vh; border:1px solid var(--cp-border); border-radius:0.625rem; }
+table { width:100%; border-collapse:separate; border-spacing:0; }
+th, td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--cp-border); }
+th { position:sticky; top:0; z-index:1; background:var(--cp-surface-soft); font-weight:600; font-size:12px; white-space:nowrap; cursor:pointer; user-select:none; }
+th.sorted::after { content:" \25BE"; color:var(--cp-accent); } th.sorted.asc::after { content:" \25B4"; }
+tbody tr { cursor:pointer; } tbody tr:hover { background:var(--cp-accent-soft); }
+td { overflow-wrap:anywhere; } .num { text-align:right; font-variant-numeric:tabular-nums; } .mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; }
+#empty { padding:24px; text-align:center; color:var(--cp-text-muted); }
+dialog { border:1px solid var(--cp-border); border-radius:16px; padding:0; background:var(--cp-surface); color:var(--cp-text); width:min(900px,94vw); box-shadow:var(--cp-shadow); }
+dialog::backdrop { background:rgba(0,0,0,0.35); }
+.dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--cp-border); }
+.dialog-head h2 { margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dialog-body { padding:16px 20px; max-height:76vh; overflow:auto; }
+dl { display:grid; grid-template-columns:190px 1fr; gap:6px 16px; margin:0; } dt { color:var(--cp-text-muted); } dd { margin:0; overflow-wrap:anywhere; }
+.notice { position:relative; margin:4px 0 0; padding:10px 14px; border-radius:10px; border-left:4px solid var(--cp-danger); background:var(--cp-danger-soft); }
+.notice.warn { border-left-color:var(--cp-warning); background:var(--cp-warning-soft); }
+/* HTTP exchanges: one line per request under each check, request and response side by side in the dialog */
+.timeline .xchg { list-style:none; margin:6px 0 2px; padding:0; border:0; }
+.timeline .xchg li { display:flex; gap:10px; align-items:baseline; margin:0; padding:2px 6px; border-radius:6px; font:12px/1.5 Consolas, "Cascadia Mono", monospace; color:var(--cp-text-soft); }
+.timeline .xchg li::before { display:none; }
+.timeline .xchg li:hover { background:var(--cp-surface-soft); color:var(--cp-text); }
+.xchg .dir { color:var(--cp-text-muted); }
+.xchg .verb { font-weight:700; color:var(--cp-text); min-width:56px; }
+.xchg .target { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hint { font:11px "Segoe UI", sans-serif; color:var(--cp-text-muted); background:var(--cp-surface-soft); border:1px solid var(--cp-border); border-radius:999px; padding:0 8px; white-space:nowrap; }
+.code { font-weight:700; white-space:nowrap; } .code.good { color:var(--cp-success); } .code.warn { color:var(--cp-warning); } .code.bad { color:var(--cp-danger); }
+dialog.wide { width:min(1280px,96vw); }
+.dialog-body h4.section { margin:20px 0 4px; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cp-accent); }
+.exchange { border:1px solid var(--cp-border); border-radius:12px; margin:10px 0; background:var(--cp-surface); }
+.exchange > summary { cursor:pointer; list-style:none; display:flex; gap:10px; align-items:center; padding:10px 14px; font-size:13px; }
+.exchange > summary::-webkit-details-marker { display:none; }
+.exchange > summary::before { content:"\25B8"; color:var(--cp-text-muted); }
+.exchange[open] > summary::before { content:"\25BE"; }
+.exchange .seq { color:var(--cp-text-muted); font-variant-numeric:tabular-nums; }
+.exchange .verb { font-weight:700; } .exchange .target { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:Consolas, "Cascadia Mono", monospace; font-size:12.5px; }
+.exchange .metric { font-size:11px; color:var(--cp-text-muted); }
+.exchange-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; padding:0 14px 12px; }
+.pane-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.pane-head span { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cp-accent); }
+.pane-head button { padding:2px 10px; font-size:12px; }
+.pane pre { margin:0; padding:12px; background:var(--cp-surface-soft); border:1px solid var(--cp-border); border-radius:10px; font:12px/1.55 Consolas, "Cascadia Mono", monospace; white-space:pre-wrap; overflow-wrap:anywhere; max-height:460px; overflow:auto; }
+.pane pre .start { font-weight:700; color:var(--cp-accent); }
+.pane pre .hname { color:var(--cp-text-muted); }
+.pane pre .comment { color:var(--cp-success); font-style:italic; }
+.xnote { margin:0; padding:0 14px 12px; font-size:12px; color:var(--cp-text-muted); }
+@media (max-width: 900px) { .exchange-grid { grid-template-columns:1fr; } }
+footer { color:var(--cp-text-muted); font-size:12px; line-height:1.6; }
+@media (max-width: 1000px) { .metrics, .scope { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 640px) { body { padding:16px; } header { padding:16px; } .metrics, .scope { grid-template-columns:1fr; } .period { min-width:0; width:100%; } .tile-icon { display:none; } dl { grid-template-columns:1fr; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; } .tile:hover { transform:none; } }
+@media print { body { background:#fff; padding:0; } .tabs, .controls, dialog { display:none !important; } .scroll { max-height:none; overflow:visible; } section.block, header { break-inside:avoid; } }
+/* Free/busy: scheduling-assistant view (one row per mailbox, one day at a time) */
+:root { --fb-busy:#0f6cbd; --fb-busy-soft:rgba(15,108,189,0.16); --fb-oof:#8764b8; --fb-tent:#0f6cbd; --fb-else:#038387; --fb-free:#16a34a; }
+html[data-theme="dark"] { --fb-busy:#479ef5; --fb-busy-soft:rgba(71,158,245,0.18); --fb-oof:#b696e3; --fb-tent:#479ef5; --fb-else:#4fc3c7; --fb-free:#4ade80; }
+td.tree { white-space:nowrap; font-weight:500; } .tree-icon { display:inline-block; width:16px; color:var(--cp-text-muted); font-size:11px; }
+.fb-days { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 14px; }
+.fb-days button { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:112px; padding:8px 12px; border-radius:12px; }
+.fb-days button.active { border-color:var(--cp-accent); background:var(--cp-accent-soft); color:var(--cp-text); }
+.fb-days b { font-size:13px; } .fb-days small { font-size:11px; color:var(--cp-text-muted); }
+.fb-spark { display:flex; gap:1px; height:6px; width:96px; border-radius:3px; overflow:hidden; background:var(--cp-border); }
+.fb-spark i { flex:1; } .fb-spark i.s1 { background:var(--fb-tent); opacity:.5; } .fb-spark i.s2 { background:var(--fb-busy); } .fb-spark i.s3 { background:var(--fb-oof); } .fb-spark i.s4 { background:var(--fb-else); } .fb-spark i.s0 { background:var(--cp-surface); }
+.fb-opts { display:flex; gap:14px; align-items:center; font-size:12px; color:var(--cp-text-muted); margin:0 0 10px; }
+.fb-board { border:1px solid var(--cp-border); border-radius:14px; overflow:hidden; background:var(--cp-surface); }
+.fb-row { display:grid; grid-template-columns:240px 1fr; border-bottom:1px solid var(--cp-border); min-height:46px; }
+.fb-row:last-child { border-bottom:0; }
+.fb-name { padding:8px 12px; border-right:1px solid var(--cp-border); background:var(--cp-surface-soft); min-width:0; }
+.fb-name strong { display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fb-name small { display:block; font-size:11px; color:var(--cp-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fb-name .avatar { float:left; width:28px; height:28px; border-radius:50%; margin:1px 8px 0 0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; background:var(--cp-accent); }
+.fb-track { position:relative; display:flex; }
+.fb-track .slot { flex:1; border-left:1px solid transparent; }
+.fb-track .slot.hour { border-left-color:var(--cp-border); }
+.fb-track .slot.off { background:repeating-linear-gradient(135deg, transparent 0 5px, var(--cp-neutral-soft) 5px 6px); }
+.fb-track .slot.s5 { background:repeating-linear-gradient(45deg, var(--cp-neutral-soft) 0 3px, transparent 3px 6px); }
+.fb-track .slot.common { background:rgba(22,163,74,0.16); box-shadow:inset 0 -3px 0 var(--fb-free); }
+.fb-ev { position:absolute; top:5px; bottom:5px; border-radius:6px; padding:2px 5px; font-size:11px; line-height:1.25; overflow:hidden; white-space:normal; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; cursor:default; color:#fff; background:var(--fb-busy); border-left:3px solid rgba(0,0,0,.25); box-shadow:0 1px 2px rgba(0,0,0,.12); }
+.fb-ev.Tentative, .fb-ev.tentative { color:var(--cp-text); background:repeating-linear-gradient(135deg, var(--fb-busy-soft) 0 6px, var(--cp-surface) 6px 10px); border:1px solid var(--fb-tent); border-left-width:3px; }
+.fb-ev.OOF, .fb-ev.oof { background:var(--fb-oof); }
+.fb-ev.WorkingElsewhere, .fb-ev.workingElsewhere { color:var(--cp-text); background:radial-gradient(var(--fb-else) 1px, transparent 1.5px) 0 0/6px 6px, var(--cp-surface); border:1px solid var(--fb-else); border-left-width:3px; }
+.fb-ev.Free, .fb-ev.free { color:var(--cp-text); background:var(--cp-surface); border:1px dashed var(--cp-border-strong); }
+.fb-ev small { color:inherit; opacity:.8; margin-left:4px; }
+.fb-now { position:absolute; top:0; bottom:0; width:2px; background:var(--cp-danger); z-index:2; }
+.fb-now::before { content:""; position:absolute; top:-3px; left:-3px; width:8px; height:8px; border-radius:50%; background:var(--cp-danger); }
+.fb-head .fb-track { height:28px; }
+.fb-head .fb-name { display:flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--cp-accent); }
+.fb-tick { position:absolute; top:7px; font-size:11px; color:var(--cp-text-muted); transform:translateX(-50%); font-variant-numeric:tabular-nums; }
+.fb-common .fb-name strong { color:var(--fb-free); }
+.fb-msg { padding:12px; font-size:12px; color:var(--cp-warning); }
+.fb-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; font-size:11px; color:var(--cp-text-muted); }
+.fb-legend i { display:inline-block; width:18px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+</style></head><body>
+<header><div class="hero-top"><div><span id="origin">Web Services Client for Exchange</span><h1 id="title">EWS test report</h1>
+<p class="subtitle" id="subtitle"></p></div>
+<div class="period"><span class="label">Execution</span><div id="period"></div></div></div>
+<div class="metrics">
+<article class="tile tile-primary"><span class="tile-label">Result</span><svg class="tile-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><strong id="metric-status">-</strong><small id="metric-status-note"></small></article>
+<article class="tile tile-tinted"><span class="tile-label">Checks passed</span><svg class="tile-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.5 1.5L8 4.5M3.5 12l1.5 1.5L8 10.5M3.5 18l1.5 1.5L8 16.5"/></svg><strong id="metric-checks">0</strong><small id="metric-checks-note"></small></article>
+<article class="tile tile-tinted"><span class="tile-label">EWS requests</span><svg class="tile-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg><strong id="metric-requests">0</strong><small id="metric-requests-note"></small></article>
+<article class="tile"><span class="tile-label">Mailbox changes</span><svg class="tile-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 6 9 7 9-7"/></svg><strong id="metric-actions">0</strong><small id="metric-actions-note"></small></article>
+</div>
+<div class="statusbar" id="statusbar" aria-label="Checks by status"></div>
+<div class="legend" id="legend"></div>
+</header>
+<section class="block"><h2>Scope</h2><p class="caption">What was tested: the mailbox, who signed in and how, how the mailbox was opened, and the Exchange that answered.</p>
+<div class="scope" id="scope"></div></section>
+<section class="block"><h2>Checks</h2><p class="caption">In the order they ran. Read from the top and stop at the first red or orange step. Under each check, the HTTP requests the client sent (&rarr;) and the answer received (&larr;), with the EWS operation and the servers that answered: click a check or a request to see the request sent and the response received in full (headers, SOAP, JSON, Windows tokens decoded).</p>
+<div id="problem"></div><div id="timeline"></div></section>
+<section class="block" id="fb-block" hidden><h2>Free/busy</h2><p class="caption" id="fb-caption"></p>
+<div class="fb-days" id="fb-days"></div>
+<div class="fb-opts"><label><input type="checkbox" id="fb-allday"> Whole day (00:00-24:00)</label><span id="fb-common-text"></span></div>
+<div class="fb-board" id="fb-board"></div>
+<div class="fb-legend" id="fb-legend"></div></section>
+<section class="block" id="data"><nav class="tabs" id="tabs" role="tablist"></nav>
+<p class="caption" id="tab-caption"></p>
+<div class="controls"><label for="search">Search <input id="search" type="search" placeholder="Any text of the current tab..." autocomplete="off"></label>
+<button id="clear-filters" type="button">Clear filters</button><button id="export" type="button" class="primary-button">Export view to CSV</button>
+<span id="result-state" class="muted" role="status" aria-live="polite"></span></div>
+<div class="scroll"><table><thead id="head"></thead><tbody id="rows"></tbody></table><p id="empty" hidden>No rows match the current filters.</p></div></section>
+<dialog id="detail"><div class="dialog-head"><h2 id="detail-title">Details</h2><button id="detail-close" type="button">Close</button></div><div class="dialog-body" id="detail-body"></div></dialog>
+<noscript>JavaScript is required to display this report. Open the CSV files of the same folder for the complete data.</noscript>
+<footer id="footer">Protect this file: it contains the mailbox, folder names, message subjects and senders, free/busy and a body preview. Access tokens, client secrets and passwords are never written to it: in the HTTP trace, tokens, codes and secrets are replaced by their length, Basic credentials by the user name, NTLM and Kerberos tokens by their decoded names (never the response to the challenge nor the ticket), and cookies are masked except the affinity cookies of Exchange.
+A passed step proves that step only, for this account and this mailbox.</footer>
+<script id="data-summary" type="application/json">{{SUMMARY_JSON}}</script>
+<script id="data-steps" type="application/json">{{STEPS_JSON}}</script>
+<script id="data-folders" type="application/json">{{FOLDERS_JSON}}</script>
+<script id="data-messages" type="application/json">{{MESSAGES_JSON}}</script>
+<script id="data-freebusy" type="application/json">{{FREEBUSY_JSON}}</script>
+<script id="data-actions" type="application/json">{{ACTIONS_JSON}}</script>
+<script id="data-trace" type="application/json">{{TRACE_JSON}}</script>
+<script>
+(() => {
+  "use strict";
+  const el = id => document.getElementById(id);
+  const read = id => { const v = JSON.parse(el(id).textContent); return v == null ? [] : (Array.isArray(v) ? v : [v]); };
+  const summary = JSON.parse(el("data-summary").textContent) || {};
+  const data = { steps: read("data-steps"), folders: read("data-folders"), messages: read("data-messages"), freebusy: read("data-freebusy"), actions: read("data-actions"), trace: read("data-trace") };
+  const exchanges = new Map(data.trace.map(x => [x.Sequence, x]));
+  const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const text = v => v == null ? "" : (Array.isArray(v) ? v.join(", ") : (typeof v === "object" ? Object.entries(v).filter(([k, x]) => x != null && x !== "").map(([k, x]) => `${k} ${x}`).join(" \u00B7 ") : String(v)));
+  const number = n => Number(n || 0).toLocaleString("en-GB");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const date = v => { const m = String(v || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/); return m ? `${m[3]} ${months[+m[2]-1]} ${m[1]} ${m[4]} UTC` : text(v); };
+  const statusClass = s => ({ Passed: "good", Warning: "warn", Blocked: "warn", Failed: "bad" })[s] || "";
+  const dotClass = s => ({ Passed: "ok", Warning: "warn", Blocked: "warn", Failed: "bad", Skipped: "skip" })[s] || "";
+  const auth = summary.Authentication || "OAuth";
+  const server = summary.Authority === "EntraID" ? "Entra ID" : (summary.Authority === "ADFS" ? "AD FS" : "OAuth");
+  const signInTitle = auth === "Basic" ? "Basic sign-in (user name and password)" : (auth === "Windows" ? `Windows sign-in (${summary.WindowsPackage || "Negotiate"})` :
+    ({ Application: `${server} sign-in of the application (client credentials)`, Delegated: `${server} sign-in through the application (delegated)` })[summary.Context] || `${server} sign-in of the user`);
+  const stageTitles = Object.assign({ Autodiscover: "Autodiscover: where is EWS", Discovery: "Prerequisites without sign-in", SignIn: signInTitle, Endpoint: "EWS endpoint and mailbox", Folders: "Folders (FindFolder)",
+    ReadMail: "Read messages (FindItem, GetItem)", FreeBusy: "Free/busy (GetUserAvailability)", CreateFolder: "Create the test folder (CreateFolder)", SendMail: "Send a test message (CreateItem)",
+    ReplyMail: "Reply to a message (ReplyToItem)", MoveMail: "Move a message (MoveItem)", DeleteMail: "Delete a message (DeleteItem)" }, summary.StageTitles || {});
+  const graph = summary.Protocol === "Graph";
+  const colors = { Passed: "var(--cp-success)", Warning: "var(--cp-warning)", Blocked: "var(--cp-accent)", Failed: "var(--cp-danger)", Skipped: "var(--cp-border-strong)" };
+  const counts = summary.Counts || {};
+  const total = data.steps.length;
+  const planned = new Set(data.steps.map(s => s.Stage));
+  const ews = data.trace.filter(x => x.Operation);
+
+  // ---- Header ---------------------------------------------------------------------------
+  el("origin").textContent = `Web Services Client for Exchange / ${summary.TestType || ""} / ${graph ? "Microsoft Graph" : "EWS"} / ${auth}${auth === "OAuth" ? " / " + (summary.Context || "User") : ""}`;
+  el("title").textContent = graph ? "Microsoft Graph test report" : "EWS test report";
+  el("subtitle").textContent = `${summary.Scenario || "Test"} for ${summary.Mailbox || "the mailbox"}. Each check says what works and what does not, with the request sent and the response received; no token, secret or password is written to this report.`;
+  [[date(summary.StartedUtc)], ["to " + date(summary.CompletedUtc)], [`${summary.DurationSeconds ?? "-"} s \u00B7 ${summary.Tool || "Web Services Client for Exchange"} ${summary.Version || ""}`]]
+    .forEach(line => el("period").appendChild(make("div", null, line[0])));
+  el("metric-status").textContent = summary.Status || "Unknown";
+  el("metric-status-note").textContent = summary.Error || (summary.Status === "Passed" ? "Every check passed" : "See the checks below");
+  el("metric-status-note").title = summary.Error || "";
+  el("metric-checks").textContent = `${number(counts.Passed)} / ${number(total)}`;
+  el("metric-checks-note").textContent = `${number(counts.Warning)} warning(s) \u00B7 ${number(counts.Blocked)} blocked \u00B7 ${number(counts.Failed)} failed \u00B7 ${number(counts.Skipped)} skipped`;
+  el("metric-requests").textContent = number(ews.length);
+  const ops = [...new Set(ews.map(x => x.Operation))];
+  el("metric-requests-note").textContent = ops.length ? ops.join(", ") : `${number(data.trace.length)} HTTP exchange(s) in total`;
+  el("metric-actions").textContent = number(data.actions.length);
+  el("metric-actions-note").textContent = data.actions.length ? [...new Set(data.actions.map(a => a.Action))].join(", ") : (summary.AllowWrite ? "Nothing changed" : "Read-only run");
+  ["Passed", "Warning", "Blocked", "Failed", "Skipped"].forEach(s => {
+    const n = counts[s] || 0;
+    if (n && total) { const seg = make("span"); seg.style.width = (100 * n / total) + "%"; seg.style.background = colors[s]; seg.title = `${s}: ${n}`; el("statusbar").appendChild(seg); }
+    const item = make("span"); const i = make("i"); i.style.background = colors[s]; item.append(i, `${s} ${n}`); el("legend").appendChild(item);
+  });
+
+  // ---- Scope ----------------------------------------------------------------------------
+  const token = summary.Token || {}, srv = summary.Server || {}, win = summary.Windows || {};
+  const accessText = { Self: "Own mailbox of the signed-in account", Delegate: "Delegate access (permissions on the mailbox)", Impersonation: "Impersonation (ExchangeImpersonation header)" }[summary.Access] || summary.Access;
+  const who = auth === "OAuth" ? (summary.Context === "Application" ? `Application ${token.AppName || summary.ClientId || ""}` : (token.User || summary.SignInUser || "-")) : (summary.SignInUser || "-");
+  const howSigned = auth === "Basic" ? "Basic: user name and password with every request" : (auth === "Windows" ? `${win.Package || summary.WindowsPackage || "Windows"}${win.Legs ? ` \u00B7 ${win.Legs} leg(s)` : ""}${win.Spn ? ` \u00B7 SPN ${win.Spn}` : ""}` :
+    [summary.Context === "Delegated" ? "On behalf of the user, through the application" : "", token.ExpiresUtc ? `Token valid until ${date(token.ExpiresUtc)}` : "", { Window: "sign-in window", DeviceCode: "device code", ClientCredentials: "client credentials", Supplied: "token supplied" }[summary.SignIn] || ""].filter(Boolean).join(" \u00B7 "));
+  [["Mailbox", summary.Mailbox, accessText],
+   ["Signed in", who, howSigned],
+   [auth === "OAuth" ? "Authorization server" : "Authentication", auth === "OAuth" ? (summary.AuthorityUrl || server) : auth, auth === "OAuth" ? [summary.TenantId ? `Tenant ${summary.TenantId}` : "", summary.AuthoritySource && summary.AuthoritySource !== "Configuration" ? `From the ${summary.AuthoritySource}` : ""].filter(Boolean).join(" \u00B7 ") : (auth === "Windows" ? (win.Server ? `NTLM server ${win.Server} \u00B7 ${win.Domain || ""}` : "Handshake in the trace") : "No token, TLS only")],
+   [auth === "OAuth" ? "Token permission" : "Credentials", auth === "OAuth" ? (token.Roles || token.Scope || "-") : (summary.SignInUser || "-"), auth === "OAuth" ? [token.ClientId ? `Client ${token.ClientId}` : "", token.Audience ? `Audience ${token.Audience}` : ""].filter(Boolean).join(" \u00B7 ") : "Never written to the report"],
+   [graph ? "Protocol" : "EWS URL", graph ? (summary.GraphUrl || "https://graph.microsoft.com/v1.0") : (summary.EwsUrl || "Not found"), graph ? ["Microsoft Graph for Exchange Online (EWS is being retired there)", summary.EwsUrl ? `EWS URL from ${summary.EwsUrlSource || "the configuration"}: ${summary.EwsUrl}` : ""].filter(Boolean).join(" \u00B7 ") : [summary.EwsUrlSource || "", summary.ProtocolSetting === "Auto" ? "EWS: mailbox on-premises" : ""].filter(Boolean).join(" \u00B7 ")],
+   ["Exchange", srv.Version || "-", [srv.Schema ? `Schema ${srv.Schema}` : "", summary.ExchangeOnline ? "Exchange Online" : ""].filter(Boolean).join(" \u00B7 ")],
+   ["Servers and affinity", srv.Route || "-", graph ? "Graph routes to the mailbox (x-ms-ags-diagnostic)" : [srv.Affinity ? "Affinity cookie received and sent back" : "X-AnchorMailbox routing", srv.Throttled ? `Throttled ${srv.Throttled} time(s)` : ""].filter(Boolean).join(" \u00B7 ")],
+   ["Request headers", graph ? "client-request-id \u00B7 $select \u00B7 Prefer" : "X-AnchorMailbox \u00B7 client-request-id", graph ? `User-Agent ${summary.UserAgent || "-"} \u00B7 paging @odata.nextLink \u00B7 Retry-After honoured` : `User-Agent ${summary.UserAgent || "-"} \u00B7 RequestServerVersion ${summary.RequestServerVersion || "-"}`]
+  ].forEach(([label, value, note]) => {
+    const card = make("div", "scope-card"); card.append(make("span", null, label), make("strong", null, text(value) || "-"));
+    if (note) card.appendChild(make("em", null, note));
+    el("scope").appendChild(card);
+  });
+
+  // ---- Checks timeline ------------------------------------------------------------------
+  const first = data.steps.find(s => s.Status === "Failed" || s.Status === "Blocked");
+  if (first) {
+    const n = make("p", "notice" + (first.Status === "Blocked" ? " warn" : ""));
+    n.append(make("strong", null, `${first.Status}: ${first.Name}. `), document.createTextNode(first.Message));
+    el("problem").appendChild(n);
+  }
+  let stage = null, list = null;
+  data.steps.forEach(step => {
+    if (step.Stage !== stage) { stage = step.Stage; el("timeline").appendChild(make("h3", null, stageTitles[stage] || stage)); list = make("ul", "timeline"); el("timeline").appendChild(list); }
+    const li = make("li", dotClass(step.Status));
+    const head = make("div"); head.append(make("span", "what", step.Name), make("span", "pill " + statusClass(step.Status), step.Status), make("span", "metric", `${number(step.DurationMs)} ms`));
+    li.append(head, make("div", "detail", step.Message));
+    const ids = (step.Trace || []).filter(id => exchanges.has(id));
+    if (ids.length) {
+      const lines = make("ul", "xchg");
+      ids.forEach(id => {
+        const x = exchanges.get(id), line = make("li");
+        line.title = "Request sent and response received";
+        line.append(make("span", "dir", "\u2192"), make("span", "verb", x.Operation || x.Method), make("span", "target", shortUrl(x.Url)));
+        if (x.Label) line.appendChild(make("span", "hint", x.Label));
+        line.append(make("span", "dir", "\u2190"), make("span", "code " + codeClass(x), codeText(x)));
+        if (x.Repeated > 1) line.appendChild(make("span", "dir", `\u00D7${x.Repeated}`));
+        line.addEventListener("click", e => { e.stopPropagation(); showExchange(x); });
+        lines.appendChild(line);
+      });
+      li.appendChild(lines);
+    }
+    li.addEventListener("click", () => showStep(step));
+    list.appendChild(li);
+  });
+
+  // ---- HTTP exchanges -------------------------------------------------------------------
+  function shortUrl(u) {
+    try { const p = new URL(u); if (p.protocol === "tls:") return String(u).replace(/^tls:\/\//, ""); return p.host + p.pathname + (p.search.length > 60 ? p.search.slice(0, 60) + "..." : p.search); } catch (e) { return text(u); }
+  }
+  function codeClass(x) { const c = Number(x.StatusCode); if (!x.StatusCode) return x.Method === "TLS" ? "" : "bad"; return c < 300 ? "good" : (c >= 500 ? "bad" : "warn"); }
+  function codeText(x) { return x.StatusCode ? `${x.StatusCode} ${x.Reason || ""}`.trim() : (x.Method === "TLS" ? "certificate" : "no response"); }
+  function messagePre(value) {
+    const pre = make("pre"); let body = false;
+    String(value || "").split("\n").forEach((line, i) => {
+      if (i > 0) pre.appendChild(document.createTextNode("\n"));
+      if (i === 0) { pre.appendChild(make("span", "start", line)); return; }
+      if (!body && line === "") { body = true; return; }
+      if (line.startsWith("# ")) { pre.appendChild(make("span", "comment", line)); return; }
+      const k = line.indexOf(":");
+      if (!body && k > 0) { pre.append(make("span", "hname", line.slice(0, k + 1)), document.createTextNode(line.slice(k + 1))); return; }
+      pre.appendChild(document.createTextNode(line));
+    });
+    return pre;
+  }
+  function pane(title, value) {
+    const p = make("div", "pane"), h = make("div", "pane-head"), copy = make("button", null, "Copy");
+    copy.type = "button";
+    copy.addEventListener("click", e => { e.preventDefault(); navigator.clipboard && navigator.clipboard.writeText(value || "").then(() => { copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy", 1200); }); });
+    h.append(make("span", null, title), copy); p.append(h, messagePre(value));
+    return p;
+  }
+  function exchangeCard(x, open) {
+    const d = make("details", "exchange"); d.open = !!open;
+    const s = make("summary");
+    s.append(make("span", "seq", `#${x.Sequence}`), make("span", "verb", x.Operation || x.Method), make("span", "target", shortUrl(x.Url)));
+    if (x.Label) s.appendChild(make("span", "hint", x.Label));
+    s.append(make("span", "code " + codeClass(x), codeText(x)), make("span", "metric", `${number(x.DurationMs)} ms`));
+    if (x.Repeated > 1) s.appendChild(make("span", "pill", `\u00D7${x.Repeated}`));
+    s.title = x.Url;
+    const g = make("div", "exchange-grid");
+    g.append(pane(x.Method === "TLS" ? "Client sent" : "Request sent", x.Request), pane(x.Method === "TLS" ? "Server presented" : "Response received", x.Response));
+    d.append(s, g);
+    const note = [x.Server ? `Answered by ${x.Server}.` : "", x.Note || ""].filter(Boolean).join(" ");
+    if (note) d.appendChild(make("p", "xnote", note));
+    return d;
+  }
+
+  // ---- Dialog ---------------------------------------------------------------------------
+  function show(title, pairs, extra) {
+    el("detail-title").textContent = title;
+    const dl = make("dl");
+    pairs.forEach(([k, v]) => { if (v === null || v === undefined || v === "") return; dl.append(make("dt", null, k), make("dd", null, text(v))); });
+    el("detail-body").replaceChildren(dl);
+    (extra || []).forEach(n => el("detail-body").appendChild(n));
+    el("detail").classList.toggle("wide", !!(extra && extra.length));
+    el("detail").showModal();
+    el("detail-body").scrollTop = 0;
+  }
+  function showStep(step) {
+    const pairs = [["Stage", stageTitles[step.Stage] || step.Stage], ["Status", step.Status], ["Message", step.Message], ["Duration", `${number(step.DurationMs)} ms`], ["Time", date(step.TimestampUtc)]];
+    Object.entries(step.Details || {}).forEach(([k, v]) => pairs.push([k, k.endsWith("Utc") ? date(v) : v]));
+    const ids = (step.Trace || []).filter(id => exchanges.has(id)), extra = [];
+    if (step.Stage === "ReadMail" && step.Name === "GetItem" && summary.Message && summary.Message.BodyPreview) pairs.push(["Body preview", summary.Message.BodyPreview]);
+    if (ids.length) {
+      extra.push(make("h4", "section", `HTTP exchanges of this check (${ids.length})`));
+      ids.forEach((id, i) => extra.push(exchangeCard(exchanges.get(id), i === ids.length - 1 || ids.length <= 2)));
+    }
+    show(step.Name, pairs, extra);
+  }
+  function showExchange(x) {
+    show(`#${x.Sequence} ${x.Operation || x.Method} ${shortUrl(x.Url)}`, [["Check", x.StepName], ["Stage", stageTitles[x.Stage] || x.Stage], ["URL", x.Url], ["Servers", x.Server], ["Time", date(x.TimestampUtc)]], [exchangeCard(x, true)]);
+  }
+  el("detail-close").addEventListener("click", () => el("detail").close());
+
+  // ---- Free/busy: scheduling-assistant view ---------------------------------------------
+  (function freeBusy() {
+    const list = (summary.FreeBusy ? (Array.isArray(summary.FreeBusy) ? summary.FreeBusy : [summary.FreeBusy]) : []).filter(Boolean);
+    const win = summary.FreeBusyWindow;
+    if (!list.length || !win) return;
+    el("fb-block").hidden = false;
+    const utc = s => { let v = String(s || ""); if (!/[zZ]$|[+-]\d\d:\d\d$/.test(v)) v = v.replace(/\.(\d{3})\d*$/, ".$1") + "Z"; return new Date(v); };
+    const start = utc(win.StartUtc).getTime(), step = (win.IntervalMinutes || 30) * 60000, days = win.Days || 7;
+    const events = data.freebusy.map(e => Object.assign({}, e, { s: utc(e.StartUtc).getTime(), e: utc(e.EndUtc).getTime() }));
+    const hm = t => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dayName = t => new Date(t).toLocaleDateString([], { weekday: "short", day: "2-digit", month: "short" });
+    const names = { 0: "Free", 1: "Tentative", 2: "Busy", 3: "Out of office", 4: "Working elsewhere", 5: "No data" };
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    // Exchange counts 'working elsewhere' as free in the merged view: the calendar items complete it.
+    const rank = { 3: 6, 2: 5, 1: 4, 4: 3, 0: 2, 5: 1 }, code = { free: 0, tentative: 1, busy: 2, oof: 3, workingelsewhere: 4 };
+    const digit = (fb, t) => {
+      const v = fb.MergedFreeBusy || ""; const i = Math.floor((t - start) / step); let best = i >= 0 && i < v.length ? Number(v[i]) : 5;
+      events.forEach(e => { if (e.Mailbox === fb.Mailbox && e.s < t + step && e.e > t) { const c = code[String(e.BusyType || "").toLowerCase()]; if (c !== undefined && (best === 5 || rank[c] > rank[best])) best = c; } });
+      return best;
+    };
+    const working = (fb, t) => {
+      if (fb.WorkStart == null || !fb.WorkingDays || !fb.WorkingDays.length) return true;
+      // Working hours are in the time zone of the mailbox: its UTC offset when known, the browser's otherwise.
+      let day, m;
+      if (fb.WorkOffsetMinutes != null) { const d = new Date(t + fb.WorkOffsetMinutes * 60000); day = d.getUTCDay(); m = d.getUTCHours() * 60 + d.getUTCMinutes(); }
+      else { const d = new Date(t); day = d.getDay(); m = d.getHours() * 60 + d.getMinutes(); }
+      return fb.WorkingDays.indexOf(dayNames[day]) >= 0 && m >= fb.WorkStart && m < fb.WorkEnd;
+    };
+    const ok = list.filter(f => f.ResponseClass === "Success" && f.MergedFreeBusy);
+    const short = { monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun" };
+    const order = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const clock = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+    const workText = fb => {
+      if (fb.WorkStart == null || !fb.WorkingDays || !fb.WorkingDays.length) return fb.WorkingHours ? "Works " + fb.WorkingHours : "Working hours not returned";
+      const idx = fb.WorkingDays.map(d => order.indexOf(d)).filter(i => i >= 0).sort((a, b) => a - b);
+      const run = idx.length > 2 && idx[idx.length - 1] - idx[0] === idx.length - 1;
+      const days = run ? `${short[order[idx[0]]]}\u2013${short[order[idx[idx.length - 1]]]}` : idx.map(i => short[order[i]]).join(" ");
+      const zone = fb.WorkOffsetMinutes == null ? "" : ` (UTC${fb.WorkOffsetMinutes >= 0 ? "+" : "\u2212"}${clock(Math.abs(fb.WorkOffsetMinutes))})`;
+      return `Works ${days} ${clock(fb.WorkStart)}\u2013${clock(fb.WorkEnd)}${zone}`;
+    };
+    const dayStarts = []; for (let d = 0; d < days; d++) dayStarts.push(start + d * 86400000);
+    el("fb-caption").textContent = `${list.length} mailbox(es), ${days} day(s) from ${dayName(start)}, slots of ${win.IntervalMinutes} min, local time of this browser. ` +
+      `Blocks are the calendar items Exchange returned (subject and location when the caller may see them); hatched cells are outside the working hours of the mailbox; the last row shows when everyone is free.`;
+    let current = 0;
+    days && dayStarts.forEach((ds, i) => {
+      const b = make("button"); b.type = "button";
+      const dayEvents = events.filter(e => e.e > ds && e.s < ds + 86400000);
+      b.append(make("b", null, dayName(ds)), make("small", null, dayEvents.length ? `${dayEvents.length} item(s)` : "no item"));
+      const spark = make("span", "fb-spark");
+      for (let h = 7; h < 20; h++) {
+        let worst = 0;
+        ok.forEach(f => { for (let t = ds + h * 3600000; t < ds + (h + 1) * 3600000; t += step) { const v = digit(f, t); if (v === 3 || (v === 2 && worst !== 3) || (v === 1 && worst === 0) || (v === 4 && worst === 0)) worst = v; } });
+        spark.appendChild(make("i", "s" + worst));
+      }
+      b.appendChild(spark);
+      b.addEventListener("click", () => { current = i; draw(); });
+      el("fb-days").appendChild(b);
+    });
+    el("fb-allday").addEventListener("change", draw);
+    function draw() {
+      [...el("fb-days").children].forEach((b, i) => b.classList.toggle("active", i === current));
+      const ds = dayStarts[current], all = el("fb-allday").checked;
+      const from = ds + (all ? 0 : 7) * 3600000, to = ds + (all ? 24 : 20) * 3600000, span = to - from;
+      const pct = t => (100 * (t - from) / span).toFixed(3) + "%";
+      const board = el("fb-board"); board.replaceChildren();
+      const head = make("div", "fb-row fb-head"), hn = make("div", "fb-name", dayName(ds)), ht = make("div", "fb-track");
+      for (let h = all ? 0 : 7; h < (all ? 24 : 20); h += all ? 2 : 1) { const tk = make("span", "fb-tick", String(h).padStart(2, "0") + ":00"); tk.style.left = pct(ds + h * 3600000); ht.appendChild(tk); }
+      head.append(hn, ht); board.appendChild(head);
+      const now = Date.now();
+      const addNow = track => { if (now > from && now < to) { const n = make("span", "fb-now"); n.style.left = pct(now); n.title = "Now " + hm(now); track.appendChild(n); } };
+      list.forEach(fb => {
+        const row = make("div", "fb-row"), name = make("div", "fb-name"), track = make("div", "fb-track");
+        const initials = String(fb.Mailbox || "?").split("@")[0].split(/[._-]/).filter(Boolean).slice(0, 2).map(x => x[0].toUpperCase()).join("");
+        name.append(make("span", "avatar", initials || "?"), make("strong", null, fb.Mailbox), make("small", null, fb.ResponseClass === "Success" ? workText(fb) : fb.ResponseCode));
+        name.title = [fb.Mailbox, fb.WorkingHours, fb.ResponseCode].filter(Boolean).join("\n");
+        if (fb.ResponseClass !== "Success" || !fb.MergedFreeBusy) {
+          track.appendChild(make("div", "fb-msg", `${fb.ResponseCode}: ${fb.MessageText || "no free/busy for this mailbox"}`));
+        } else {
+          for (let t = from; t < to; t += step) {
+            const c = make("span", "slot" + (new Date(t).getMinutes() === 0 ? " hour" : "") + (working(fb, t) ? "" : " off") + (digit(fb, t) === 5 ? " s5" : ""));
+            c.title = `${hm(t)} ${names[digit(fb, t)]}`; track.appendChild(c);
+          }
+          events.filter(e => e.Mailbox === fb.Mailbox && e.e > from && e.s < to).forEach(e => {
+            const s = Math.max(e.s, from), f = Math.min(e.e, to);
+            const ev = make("div", "fb-ev " + (e.BusyType || "Busy"));
+            ev.style.left = pct(s); ev.style.width = `calc(${(100 * (f - s) / span).toFixed(3)}% - 2px)`;
+            ev.append(document.createTextNode(e.Subject || names[{ Free: 0, Tentative: 1, Busy: 2, OOF: 3, WorkingElsewhere: 4 }[e.BusyType] ?? 2] || e.BusyType || "Busy"));
+            if (e.Location) ev.appendChild(make("small", null, e.Location));
+            ev.title = [`${hm(e.s)} - ${hm(e.e)}`, e.BusyType, e.Subject, e.Location, e.IsPrivate === "true" || e.IsPrivate === true ? "Private" : ""].filter(Boolean).join(" \u00B7 ");
+            track.appendChild(ev);
+          });
+        }
+        addNow(track); row.append(name, track); board.appendChild(row);
+      });
+      if (ok.length) {
+        const row = make("div", "fb-row fb-common"), name = make("div", "fb-name"), track = make("div", "fb-track");
+        name.append(make("span", "avatar", "\u2713"), make("strong", null, ok.length > 1 ? "Everyone free" : "Free time"), make("small", null, "Free slots inside working hours"));
+        name.querySelector(".avatar").style.background = "var(--fb-free)";
+        let free = 0;
+        for (let t = from; t < to; t += step) {
+          const common = ok.every(f => digit(f, t) === 0 && working(f, t));
+          if (common) free += step;
+          const c = make("span", "slot" + (new Date(t).getMinutes() === 0 ? " hour" : "") + (common ? " common" : ""));
+          c.title = `${hm(t)} ${common ? "everyone free" : "not everyone free"}`; track.appendChild(c);
+        }
+        addNow(track); row.append(name, track); board.appendChild(row);
+        el("fb-common-text").textContent = `${ok.length > 1 ? "Common free time" : "Free time"} on this day, inside working hours: ${Math.floor(free / 3600000)} h ${String(Math.round(free % 3600000 / 60000)).padStart(2, "0")}`;
+      }
+    }
+    [["Busy", "var(--fb-busy)"], ["Tentative", "repeating-linear-gradient(135deg, var(--fb-busy-soft) 0 4px, var(--cp-surface) 4px 7px)"], ["Out of office", "var(--fb-oof)"],
+     ["Working elsewhere", "radial-gradient(var(--fb-else) 1px, transparent 1.5px) 0 0/5px 5px"], ["Outside working hours", "repeating-linear-gradient(135deg, transparent 0 4px, var(--cp-neutral-soft) 4px 5px)"],
+     ["Everyone free", "rgba(22,163,74,0.35)"], ["No data", "repeating-linear-gradient(45deg, var(--cp-neutral-soft) 0 3px, transparent 3px 6px)"]].forEach(([label, bg]) => {
+      const item = make("span"), sw = make("i"); sw.style.background = bg; sw.style.border = "1px solid var(--cp-border)"; item.append(sw, label); el("fb-legend").appendChild(item);
+    });
+    const firstBusy = dayStarts.findIndex(ds => events.some(e => e.e > ds && e.s < ds + 86400000));
+    current = firstBusy >= 0 ? firstBusy : 0;
+    draw();
+  })();
+
+  // ---- Tabs -----------------------------------------------------------------------------
+  const fbSummary = (summary.FreeBusy ? (Array.isArray(summary.FreeBusy) ? summary.FreeBusy : [summary.FreeBusy]) : []);
+  const tabs = [
+    { key: "steps", title: "All checks", caption: "Every check with its details on one line (same content as Steps.csv).",
+      cols: [["Stage", r => stageTitles[r.Stage] || r.Stage], ["Check", r => r.Name], ["Status", r => r.Status, "status"], ["Message", r => r.Message], ["Duration (ms)", r => r.DurationMs, "num"], ["Time (UTC)", r => date(r.TimestampUtc)]],
+      open: r => showStep(r) },
+    { key: "folders", title: "Folders", caption: graph ? "Folder tree of the mailbox (mailFolders and childFolders), in tree order. Click a folder for its full path and IDs." : "Folder tree of the mailbox (FindFolder, deep traversal from the root), in tree order. Click a folder for its full path and IDs.",
+      cols: [["Folder", r => r.DisplayName, "tree"], ["Class", r => r.FolderClass], ["Items", r => r.TotalCount, "num"], ["Unread", r => r.UnreadCount, "num"], ["Subfolders", r => r.ChildFolderCount, "num"]],
+      open: r => show(r.DisplayName, [["Path", r.Path], ["Class", r.FolderClass], ["Items", r.TotalCount], ["Unread", r.UnreadCount], ["Subfolders", r.ChildFolderCount], ["Folder ID", r.FolderId], ["Parent folder ID", r.ParentFolderId]]) },
+    { key: "messages", title: "Messages", caption: "Most recent Inbox messages returned by FindItem (headers only). The message read in full by GetItem is in the GetItem check.",
+      cols: [["Received", r => date(r.DateTimeReceived)], ["From", r => r.From], ["Subject", r => r.Subject], ["Read", r => r.IsRead], ["Attachments", r => r.HasAttachments], ["Size", r => r.Size, "num"], ["Item ID (-ItemId)", r => r.ItemId, "mono"]] },
+    { key: "freebusy", title: "Free/busy", caption: (fbSummary.length ? fbSummary.map(f => `${f.Mailbox}: ${f.ResponseCode}${f.WorkingHours ? " \u00B7 working hours " + f.WorkingHours : ""}${f.MergedFreeBusy ? " \u00B7 merged view " + f.MergedFreeBusy.length + " slots (0 free, 1 tentative, 2 busy, 3 away, 4 elsewhere)" : ""}`).join(" | ") : "Busy periods returned by GetUserAvailability, local time of this computer."),
+      cols: [["Mailbox", r => r.Mailbox], ["Start", r => r.Start], ["End", r => r.End], ["Busy type", r => r.BusyType], ["Subject", r => r.Subject], ["Location", r => r.Location], ["Meeting", r => r.IsMeeting], ["Private", r => r.IsPrivate]] },
+    { key: "actions", title: "Changes", caption: "What this run changed in the mailbox: folder created, messages sent, replied to, moved, deleted.",
+      cols: [["Time (UTC)", r => date(r.TimeUtc)], ["Action", r => r.Action], ["Target", r => r.Target], ["Result", r => r.Result], ["Item ID", r => r.ItemId, "mono"]] },
+    { key: "trace", title: "HTTP trace", caption: "Every request the client sent and the response it received, in order (Trace.csv). Click a line for the request and the response in full.",
+      cols: [["#", r => r.Sequence, "num"], ["Check", r => r.StepName], ["Operation", r => r.Operation || r.Method], ["URL", r => r.Url, "mono"], ["Sent with", r => r.Label], ["Status", r => codeText(r)], ["Servers", r => r.Server], ["Duration (ms)", r => r.DurationMs, "num"], ["Sent", r => r.Repeated, "num"], ["Time (UTC)", r => date(r.TimestampUtc)]],
+      open: r => showExchange(r) }
+  ];
+  let current = tabs[0], sortIndex = -1, sortAsc = true;
+  tabs.forEach(t => {
+    const b = make("button"); b.type = "button"; b.setAttribute("role", "tab"); b.append(t.title, make("span", "count", number(data[t.key].length)));
+    b.addEventListener("click", () => { current = t; sortIndex = -1; el("search").value = ""; render(); });
+    t.button = b; el("tabs").appendChild(b);
+  });
+  function rows() {
+    const q = el("search").value.trim().toLowerCase();
+    let r = data[current.key].filter(row => !q || current.cols.some(c => text(c[1](row)).toLowerCase().includes(q)));
+    if (sortIndex >= 0) {
+      const get = current.cols[sortIndex][1], numeric = current.cols[sortIndex][2] === "num";
+      r = r.slice().sort((a, b) => { const x = get(a), y = get(b); const d = numeric ? (Number(x) - Number(y)) : text(x).localeCompare(text(y)); return sortAsc ? d : -d; });
+    }
+    return r;
+  }
+  function render() {
+    tabs.forEach(t => { t.button.classList.toggle("active", t === current); t.button.setAttribute("aria-selected", t === current); });
+    el("tab-caption").textContent = current.caption;
+    const tr = make("tr");
+    current.cols.forEach((c, i) => {
+      const th = make("th", i === sortIndex ? ("sorted" + (sortAsc ? " asc" : "")) : null, c[0]);
+      th.addEventListener("click", () => { sortAsc = sortIndex === i ? !sortAsc : true; sortIndex = i; render(); });
+      tr.appendChild(th);
+    });
+    el("head").replaceChildren(tr);
+    const list = rows(), body = el("rows"); body.replaceChildren();
+    list.forEach(row => {
+      const line = make("tr");
+      current.cols.forEach(c => {
+        const td = make("td", c[2] === "num" || c[2] === "mono" ? c[2] : null);
+        if (c[2] === "status") td.appendChild(make("span", "pill " + statusClass(c[1](row)), c[1](row)));
+        else if (c[2] === "tree") { td.className = "tree"; td.style.paddingLeft = (12 + 20 * (sortIndex < 0 ? Number(row.Depth || 0) : 0)) + "px"; td.append(make("span", "tree-icon", Number(row.ChildFolderCount) > 0 ? "\u25BE" : "\u2022"), text(c[1](row))); td.title = row.Path || ""; }
+        else td.textContent = text(c[1](row));
+        line.appendChild(td);
+      });
+      line.addEventListener("click", () => current.open ? current.open(row) : show(current.title, current.cols.map(c => [c[0], c[1](row)])));
+      body.appendChild(line);
+    });
+    el("empty").hidden = list.length !== 0;
+    el("result-state").textContent = `${number(list.length)} of ${number(data[current.key].length)} rows`;
+  }
+  const csvCell = v => { let s = text(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  el("export").addEventListener("click", () => {
+    const lines = [current.cols.map(c => csvCell(c[0])).join(";")].concat(rows().map(r => current.cols.map(c => csvCell(c[1](r))).join(";")));
+    const link = make("a"); link.href = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" }));
+    link.download = `WebServicesClient-${current.key}-view.csv`; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+  el("search").addEventListener("input", render);
+  el("clear-filters").addEventListener("click", () => { el("search").value = ""; sortIndex = -1; render(); });
+  render();
+})();
+</script>
+</body></html>
