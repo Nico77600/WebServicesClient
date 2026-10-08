@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Renders the screenshots of the guides (docs\images\wsc-*.png) from the real tool, against the simulated Exchange.
+    Renders the screenshots of the guides (package\docs\images\wsc-*.png) from the real tool, against the simulated Exchange.
 
 .DESCRIPTION
     No lab is needed and the images always match the current code: the console, the window and the report
@@ -24,7 +24,7 @@
     Run tools\Build-Documentation.ps1 afterwards: the guides embed the images.
 
 .PARAMETER OutputFolder
-    Default: docs\images next to the tools folder.
+    Default: package\docs\images next to the tools folder.
 
 .PARAMETER KeepWork
     Keeps the work folder (reports, HTML pages) and shows its path.
@@ -42,7 +42,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-if (-not $OutputFolder) { $OutputFolder = Join-Path $root 'docs\images' }
+if (-not $OutputFolder) { $OutputFolder = Join-Path $root 'package\docs\images' }
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $edge) { throw 'Microsoft Edge not found: it takes the screenshots (headless mode).' }
 $work = Join-Path ([IO.Path]::GetTempPath()) ('wsc-doc-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -92,7 +92,7 @@ function Save-Page([string]$Html, [string]$Name, [int]$Width, [int]$Height = 0) 
 $env:WSC_FORCE_COLOR = '1'
 $env:WSC_ICONS = 'Emoji'
 Remove-Module WebServicesClient -ErrorAction SilentlyContinue
-Import-Module (Join-Path $root 'WebServicesClient.psd1') -Force
+Import-Module (Join-Path $root 'package\WebServicesClient.psd1') -Force
 $module = Get-Module WebServicesClient
 . (Join-Path $root 'tests\WebServicesClient.Simulator.ps1')
 

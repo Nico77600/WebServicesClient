@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Builds the HTML guides (docs\WebServicesClient-UserGuide.html, docs\WebServicesClient-Guide.html) from
+    Builds the HTML guides (package\docs\WebServicesClient-UserGuide.html, package\docs\WebServicesClient-Guide.html) from
     their Markdown sources. With -Source, builds that guide only.
 
 .DESCRIPTION
@@ -40,7 +40,7 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not $Source) {
     foreach ($name in 'WebServicesClient-UserGuide', 'WebServicesClient-Guide') {
-        & $PSCommandPath -Source (Join-Path $PSScriptRoot "..\docs\$name.md")
+        & $PSCommandPath -Source (Join-Path $PSScriptRoot "..\package\docs\$name.md")
     }
     return
 }

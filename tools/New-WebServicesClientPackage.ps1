@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     The package contains only what Invoke-WebServicesClient.ps1 needs at run time, plus the HTML guides:
-        Invoke-WebServicesClient.ps1, WebServicesClient.psd1, WebServicesClient.psm1, src\, config\, templates\,
-        docs\WebServicesClient-UserGuide.html, docs\WebServicesClient-Guide.html, README.md, CHANGELOG.md, LICENSE, THIRD-PARTY-NOTICES.md
+        package\Invoke-WebServicesClient.ps1, package\WebServicesClient.psd1, package\WebServicesClient.psm1,
+        package\src\, package\config\, package\templates\, package\docs\WebServicesClient-UserGuide.html,
+        package\docs\WebServicesClient-Guide.html, package\README.md, CHANGELOG.md, package\LICENSE, package\THIRD-PARTY-NOTICES.md
     The HTML guides (user guide, developer guide) are rebuilt first from their Markdown sources (tools\Build-Documentation.ps1):
     they are self-contained (images inline), so the Markdown sources and the images are not copied.
     It never copies reports\, logs\, artifacts\, tests\ (with the simulator) or tools\.
@@ -37,7 +38,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$version = (Import-PowerShellDataFile -LiteralPath (Join-Path $root 'WebServicesClient.psd1')).ModuleVersion
+$packageRoot = Join-Path $root 'package'
+$version = (Import-PowerShellDataFile -LiteralPath (Join-Path $packageRoot 'WebServicesClient.psd1')).ModuleVersion
 if (-not $Destination) { $Destination = Join-Path (Split-Path $root -Parent) "package\WebServicesClient-$version" }
 $Destination = [IO.Path]::GetFullPath($Destination, (Get-Location).Path).TrimEnd('\')
 $rootPrefix = [IO.Path]::GetFullPath($root).TrimEnd('\') + '\'
@@ -60,9 +62,10 @@ if (Test-Path -LiteralPath $Destination) {
 $files = [Collections.Generic.List[string]]::new()
 foreach ($f in 'Invoke-WebServicesClient.ps1', 'WebServicesClient.psd1', 'WebServicesClient.psm1', 'README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md',
     'config\WebServicesClient.config.psd1', 'templates\Report.template.html', 'docs\WebServicesClient-UserGuide.html', 'docs\WebServicesClient-Guide.html') { $files.Add($f) }
-Get-ChildItem -LiteralPath (Join-Path $root 'src') -Filter '*.ps1' -File | ForEach-Object { $files.Add("src\$($_.Name)") }
+Get-ChildItem -LiteralPath (Join-Path $packageRoot 'src') -Filter '*.ps1' -File | ForEach-Object { $files.Add("src\$($_.Name)") }
 foreach ($f in $files) {
-    $source = Join-Path $root $f
+    $source = Join-Path $packageRoot $f
+    if ($f -eq 'CHANGELOG.md') { $source = Join-Path $root $f }
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing file in the tool folder: $f" }
     $target = Join-Path $Destination $f
     [void][IO.Directory]::CreateDirectory((Split-Path $target -Parent))
@@ -84,7 +87,7 @@ if ($config -notmatch 'contoso\.test') { $problems.Add('The configuration of the
 if ($problems.Count) { throw ("Package not valid ($Destination):`n - " + ($problems -join "`n - ")) }
 
 # Same scenarios as the source code, and reports written under the package folder.
-$expected = [string](& pwsh -NoProfile -Command "Import-Module '$root\WebServicesClient.psd1'; (Get-WscTestCatalog).Count")
+$expected = [string](& pwsh -NoProfile -Command "Import-Module '$packageRoot\WebServicesClient.psd1'; (Get-WscTestCatalog).Count")
 $loaded = & pwsh -NoProfile -Command "Import-Module '$Destination\WebServicesClient.psd1'; (Get-WscTestCatalog).Count; (Import-WscConfiguration).OutputPath"
 if ($LASTEXITCODE -ne 0 -or $loaded[0] -ne $expected -or -not ([string]$loaded[1]).StartsWith($Destination)) { throw "The module does not load correctly from the package (expected $expected scenarios): $loaded" }
 

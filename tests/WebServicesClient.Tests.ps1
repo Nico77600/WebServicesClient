@@ -12,11 +12,12 @@
 #>
 
 BeforeAll {
-    $script:Root = Split-Path $PSScriptRoot -Parent
+    $script:RepoRoot = Split-Path $PSScriptRoot -Parent
+    $script:Root = Join-Path $script:RepoRoot 'package'
     . (Join-Path $PSScriptRoot 'WebServicesClient.Simulator.ps1')
     $script:Base = @{
         Mailbox = 'ews-test@contoso.test'; Discovery = 'Manual'; EwsUrl = 'https://mail.contoso.test/EWS/Exchange.asmx'; AdfsUrl = 'https://adfs.contoso.test/adfs'
-        SignIn = 'DeviceCode'; OutputPath = (Join-Path $script:Root 'artifacts\test-reports'); LogPath = (Join-Path $script:Root 'artifacts\test-logs')
+        SignIn = 'DeviceCode'; OutputPath = (Join-Path $script:RepoRoot 'artifacts\test-reports'); LogPath = (Join-Path $script:RepoRoot 'artifacts\test-logs')
     }
     function Start-Sim([hashtable]$Changes = @{}) {
         Import-Module (Join-Path $script:Root 'WebServicesClient.psd1') -Force
@@ -48,7 +49,7 @@ Describe 'Configuration' {
     }
 
     It 'lists unknown sections, unknown keys and invalid values together' {
-        $path = Join-Path $script:Root 'artifacts\bad.config.psd1'
+        $path = Join-Path $script:RepoRoot 'artifacts\bad.config.psd1'
         [void][IO.Directory]::CreateDirectory((Split-Path $path))
         "@{ Target = @{ EwsUrl = 'http://mail/owa'; Mailbx = 'a' }; Extra = @{}; Test = @{ MessageCount = 500; DefaultType = 'Nope' }; Identity = @{ Authentication = 'Digest' } }" | Set-Content $path
         $text = ({ Import-WscConfiguration -Path $path } | Should -Throw -PassThru).Exception.Message
@@ -414,7 +415,7 @@ Describe 'Report' {
 
     It 'writes the CSV, JSON and HTML files without a token, a secret or a formula' {
         $r = Invoke-Sim 'ReadMail' @{ Authority = 'EntraID'; Context = 'Application'; AppClientId = $script:App } -ClientSecret $script:Secret
-        $report = Export-WscReport -Result $r -OutputPath (Join-Path $script:Root 'artifacts\test-reports')
+        $report = Export-WscReport -Result $r -OutputPath (Join-Path $script:RepoRoot 'artifacts\test-reports')
         foreach ($k in 'Steps', 'Folders', 'Messages', 'FreeBusy', 'Actions', 'Trace', 'Summary', 'Html') { Test-Path $report.Files[$k] | Should -BeTrue }
         $all = (Get-ChildItem $report.Directory -File | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
         foreach ($t in $script:State.ValidTokens) { $all.Contains($t) | Should -BeFalse }

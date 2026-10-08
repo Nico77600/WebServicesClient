@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-banner-dark.png">
-    <img alt="Web Services Client for Exchange: a test toolbox for Exchange mailboxes, on-premises through EWS and in Exchange Online through Microsoft Graph; it signs in like a real client, as a user or an application, does what a client does (folders, read, send, reply, move, delete, free/busy) and shows every request sent and every response received" src="docs/images/readme-banner-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="package/docs/images/readme-banner-dark.png">
+    <img alt="Web Services Client for Exchange: a test toolbox for Exchange mailboxes, on-premises through EWS and in Exchange Online through Microsoft Graph; it signs in like a real client, as a user or an application, does what a client does (folders, read, send, reply, move, delete, free/busy) and shows every request sent and every response received" src="package/docs/images/readme-banner-light.png">
   </picture>
 </p>
 
@@ -11,8 +11,8 @@
   <a href="#ews-or-microsoft-graph"><b>EWS or Graph</b></a> &nbsp;&middot;&nbsp;
   <a href="#reports"><b>Reports</b></a> &nbsp;&middot;&nbsp;
   <a href="#quick-start"><b>Quick start</b></a> &nbsp;&middot;&nbsp;
-  <a href="docs/WebServicesClient-UserGuide.md"><b>User guide</b></a> &nbsp;&middot;&nbsp;
-  <a href="docs/WebServicesClient-Guide.md"><b>Developer guide</b></a>
+  <a href="package/docs/WebServicesClient-UserGuide.md"><b>User guide</b></a> &nbsp;&middot;&nbsp;
+  <a href="package/docs/WebServicesClient-Guide.md"><b>Developer guide</b></a>
 </p>
 
 > [!IMPORTANT]
@@ -31,15 +31,15 @@ An application or a user that cannot reach a mailbox through EWS says almost not
 This tool replays that path from an administration workstation — in the domain or not —, **stage by stage**, with the four ways a client signs in and the three contexts an application runs in, and says for each check what works, what does not, and what to look at, with **the request it sent and the response it received**. It replaces a single free/busy script with a complete client: folders, read, send, reply, move, delete and free/busy of several mailboxes.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-principles-dark.png">
-  <img alt="Four ways to sign in and three contexts: OAuth with AD FS (Exchange 2019 CU13+ or SE), OAuth with Entra ID (hybrid modern authentication or Exchange Online), Basic and Windows (Negotiate, NTLM, Kerberos with the handshake traced leg by leg); as a user, a delegated application or an application, with own mailbox, delegate access or impersonation" src="docs/images/readme-principles-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="package/docs/images/readme-principles-dark.png">
+  <img alt="Four ways to sign in and three contexts: OAuth with AD FS (Exchange 2019 CU13+ or SE), OAuth with Entra ID (hybrid modern authentication or Exchange Online), Basic and Windows (Negotiate, NTLM, Kerberos with the handshake traced leg by leg); as a user, a delegated application or an application, with own mailbox, delegate access or impersonation" src="package/docs/images/readme-principles-light.png">
 </picture>
 
 ## How it works
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-how-it-works-dark.png">
-  <img alt="The stages, always in this order: Autodiscover, prerequisites without sign-in, sign-in (OAuth token and claims, Basic, or the Windows handshake), endpoint (the Inbox opened, front end and back end, affinity), operations (folders, messages, free/busy, then the writes); four ways to use them: Discovery, ReadOnly, MailCycle and Full, and the HTTP trace" src="docs/images/readme-how-it-works-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="package/docs/images/readme-how-it-works-dark.png">
+  <img alt="The stages, always in this order: Autodiscover, prerequisites without sign-in, sign-in (OAuth token and claims, Basic, or the Windows handshake), endpoint (the Inbox opened, front end and back end, affinity), operations (folders, messages, free/busy, then the writes); four ways to use them: Discovery, ReadOnly, MailCycle and Full, and the HTTP trace" src="package/docs/images/readme-how-it-works-light.png">
 </picture>
 
 - **Finds EWS like Outlook**: Autodiscover v2, then the classic POX Autodiscover with a password, the HTTP redirect and the SRV record — or a URL given (`-Discovery Manual`).
@@ -51,8 +51,8 @@ This tool replays that path from an administration workstation — in the domain
 ## EWS or Microsoft Graph
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-protocols-dark.png">
-  <img alt="EWS or Microsoft Graph, chosen by -Protocol Auto once Autodiscover has found the mailbox: on-premises, EWS with SOAP, X-AnchorMailbox, affinity, impersonation or delegate access; Exchange Online, Microsoft Graph (mailFolders, messages, sendMail, reply, move, getSchedule) since EWS is retired there" src="docs/images/readme-protocols-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="package/docs/images/readme-protocols-dark.png">
+  <img alt="EWS or Microsoft Graph, chosen by -Protocol Auto once Autodiscover has found the mailbox: on-premises, EWS with SOAP, X-AnchorMailbox, affinity, impersonation or delegate access; Exchange Online, Microsoft Graph (mailFolders, messages, sendMail, reply, move, getSchedule) since EWS is retired there" src="package/docs/images/readme-protocols-light.png">
 </picture>
 
 EWS is disabled in Exchange Online from October 2026 and stopped in April 2027, and Microsoft Graph does not reach on-premises mailboxes. With `-Protocol Auto` (default), the tool uses EWS for an on-premises mailbox and Microsoft Graph for a mailbox in Exchange Online — the same scenarios, the same checks and the same report. `-Protocol EWS` shows the refusal of Exchange Online (`HTTP 403`, `X-EWS-Policy-Reason`).
@@ -61,16 +61,16 @@ EWS is disabled in Exchange Online from October 2026 and stopped in April 2027, 
 
 <table>
   <tr>
-    <td width="50%" valign="top"><a href="docs/images/wsc-report-overview.png"><img alt="HTML report overview" src="docs/images/wsc-report-overview.png"></a><br><sub><b>HTML report</b> &middot; result, checks passed, EWS requests, changes, and what was tested: mailbox, sign-in, token, EWS URL, servers and affinity</sub></td>
-    <td width="50%" valign="top"><a href="docs/images/wsc-report-freebusy.png"><img alt="Free/busy view" src="docs/images/wsc-report-freebusy.png"></a><br><sub><b>Free/busy</b> &middot; like the scheduling assistant of Outlook: one row per mailbox, working hours, and when everyone is free</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-report-overview.png"><img alt="HTML report overview" src="package/docs/images/wsc-report-overview.png"></a><br><sub><b>HTML report</b> &middot; result, checks passed, EWS requests, changes, and what was tested: mailbox, sign-in, token, EWS URL, servers and affinity</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-report-freebusy.png"><img alt="Free/busy view" src="package/docs/images/wsc-report-freebusy.png"></a><br><sub><b>Free/busy</b> &middot; like the scheduling assistant of Outlook: one row per mailbox, working hours, and when everyone is free</sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><a href="docs/images/wsc-report-exchange.png"><img alt="A request sent and the response received" src="docs/images/wsc-report-exchange.png"></a><br><sub><b>Request sent, response received</b> &middot; for every check: headers, SOAP and JSON indented, NTLM and Kerberos decoded; tokens masked</sub></td>
-    <td width="50%" valign="top"><a href="docs/images/wsc-report-folders.png"><img alt="The folder tree" src="docs/images/wsc-report-folders.png"></a><br><sub><b>Folders</b> &middot; the real names as a tree; the tabs Messages, Free/busy, Changes and HTTP trace next to it</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-report-exchange.png"><img alt="A request sent and the response received" src="package/docs/images/wsc-report-exchange.png"></a><br><sub><b>Request sent, response received</b> &middot; for every check: headers, SOAP and JSON indented, NTLM and Kerberos decoded; tokens masked</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-report-folders.png"><img alt="The folder tree" src="package/docs/images/wsc-report-folders.png"></a><br><sub><b>Folders</b> &middot; the real names as a tree; the tabs Messages, Free/busy, Changes and HTTP trace next to it</sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><a href="docs/images/wsc-console.png"><img alt="A ReadOnly run in the console" src="docs/images/wsc-console.png"></a><br><sub><b>Console</b> &middot; a ReadOnly run with AD FS, from Autodiscover to the free/busy map of three mailboxes</sub></td>
-    <td width="50%" valign="top"><a href="docs/images/wsc-gui-dark.png"><img alt="The window" src="docs/images/wsc-gui-dark.png"></a><br><sub><b>Window</b> &middot; choose the sign-in method, the mailbox and the scenario, follow the progress, open the report</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-console.png"><img alt="A ReadOnly run in the console" src="package/docs/images/wsc-console.png"></a><br><sub><b>Console</b> &middot; a ReadOnly run with AD FS, from Autodiscover to the free/busy map of three mailboxes</sub></td>
+    <td width="50%" valign="top"><a href="package/docs/images/wsc-gui-dark.png"><img alt="The window" src="package/docs/images/wsc-gui-dark.png"></a><br><sub><b>Window</b> &middot; choose the sign-in method, the mailbox and the scenario, follow the progress, open the report</sub></td>
   </tr>
 </table>
 
@@ -90,7 +90,7 @@ Each run writes `Steps.csv` (one row per check), `Trace.csv` (every HTTP request
 
 ```powershell
 git clone https://github.com/Nico77600/WebServicesClient.git
-cd WebServicesClient
+cd WebServicesClient\package
 notepad .\config\WebServicesClient.config.psd1     # the test mailbox, the EWS URL, the AD FS URL
 
 .\Invoke-WebServicesClient.ps1 -TestType Discovery                                   # no sign-in: Autodiscover, certificates, which sign-in Exchange offers
@@ -102,18 +102,18 @@ notepad .\config\WebServicesClient.config.psd1     # the test mailbox, the EWS U
 .\Invoke-WebServicesClient.ps1 -Gui                                                  # the same in a window
 ```
 
-One command per everyday question — EWS does not answer, a user cannot open the mailbox, an application, free/busy, the writes, a test mailbox to fill: see the [user guide](docs/WebServicesClient-UserGuide.md).
+One command per everyday question — EWS does not answer, a user cannot open the mailbox, an application, free/busy, the writes, a test mailbox to fill: see the [user guide](package/docs/WebServicesClient-UserGuide.md).
 
-The zip of each [release](https://github.com/Nico77600/WebServicesClient/releases) contains only the files needed to run, with both guides in HTML; `.\tools\New-WebServicesClientPackage.ps1` builds the same package from the repository.
+The repository `package` folder holds exactly the files needed to run, with the guides. The zip of each [release](https://github.com/Nico77600/WebServicesClient/releases) contains the same run-time files with both HTML guides; `tools\New-WebServicesClientPackage.ps1` builds that zip content from the repository.
 
 ## Documentation
 
 | Guide | Content |
 |---|---|
-| **[User guide](docs/WebServicesClient-UserGuide.md)** | For the people who run the tests: **prerequisites** and **everyday commands only** — does EWS answer, why can this user not open the mailbox, does this application have access, when are these people free, can a client send, reply, move and delete. |
-| **[Developer guide](docs/WebServicesClient-Guide.md)** | Everything else: how it works, EWS or Microsoft Graph, each sign-in method with the AD FS, Entra ID and Exchange configuration it expects, contexts and access to the mailbox, the configuration in detail, how to read the report and the HTTP trace, troubleshooting, the architecture of the module, the tests and how to evolve the tool. |
+| **[User guide](package/docs/WebServicesClient-UserGuide.md)** | For the people who run the tests: **prerequisites** and **everyday commands only** — does EWS answer, why can this user not open the mailbox, does this application have access, when are these people free, can a client send, reply, move and delete. |
+| **[Developer guide](package/docs/WebServicesClient-Guide.md)** | Everything else: how it works, EWS or Microsoft Graph, each sign-in method with the AD FS, Entra ID and Exchange configuration it expects, contexts and access to the mailbox, the configuration in detail, how to read the report and the HTTP trace, troubleshooting, the architecture of the module, the tests and how to evolve the tool. |
 
-Both guides also exist as a single HTML file with a light and a dark theme (`docs/WebServicesClient-UserGuide.html`, `docs/WebServicesClient-Guide.html`): download them and open them locally, or use the copies in the release zip.
+Both guides also exist as a single HTML file with a light and a dark theme (`package/docs/WebServicesClient-UserGuide.html`, `package/docs/WebServicesClient-Guide.html`): download them and open them locally, or use the copies in the release zip.
 
 ## Tests
 
