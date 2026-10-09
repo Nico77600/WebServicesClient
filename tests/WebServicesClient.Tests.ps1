@@ -100,6 +100,71 @@ Describe 'Configuration' {
     }
 }
 
+Describe 'Response diagnostics' {
+    BeforeAll { Import-Module (Join-Path $script:Root 'WebServicesClient.psd1') -Force }
+    BeforeEach { $script:DiagnosticHttpClient = [Net.Http.HttpClient]::new() }
+    AfterEach { $script:DiagnosticHttpClient.Dispose() }
+
+    It 'preserves the error code and message when summarising HTML responses' {
+        $errorRecords = & (Get-Module WebServicesClient) { , $Error }
+        $text = & (Get-Module WebServicesClient) {
+            Format-WscHtmlSummary -Text '<title>Request failed</title><p>MSIS7000: invalid request</p>' -Length 80
+        }
+        $text | Should -Match 'Title: Request failed'
+        $text | Should -Match 'Error: MSIS7000: invalid request'
+        $text | Should -Not -Match 'Text:'
+        $remainingErrorRecords = & (Get-Module WebServicesClient) { , $Error }
+        [object]::ReferenceEquals($errorRecords, $remainingErrorRecords) | Should -BeTrue
+    }
+
+    It 'summarises ordinary HTML when no error code is present' {
+        $text = & (Get-Module WebServicesClient) {
+            Format-WscHtmlSummary -Text '<title>Service</title><p>Temporarily unavailable</p>' -Length 60
+        }
+        $text | Should -Match 'Title: Service'
+        $text | Should -Match 'Text: Service Temporarily unavailable'
+        $text | Should -Not -Match 'Error:'
+    }
+
+    It 'preserves the server message when a POX response has no EWS URL' {
+        Mock Invoke-WscHttp -ModuleName WebServicesClient {
+            [pscustomobject]@{
+                StatusCode = 200
+                Body = [Text.Encoding]::UTF8.GetBytes('<Autodiscover><Response><Error><Message>Mailbox unavailable</Message></Error></Response></Autodiscover>')
+            }
+        }
+        $errorRecords = & (Get-Module WebServicesClient) { , $Error }
+        $response = & (Get-Module WebServicesClient) {
+            param($HttpClient)
+            Get-WscAutodiscoverPox -Context @{
+                Config = @{ Mailbox = 'ews-test@contoso.test'; UserAgent = 'Test'; Authentication = 'Basic' }
+                Credential = $null; HttpClient = $HttpClient
+            } -BaseUrl 'https://autodiscover.contoso.test'
+        } $script:DiagnosticHttpClient
+        $response.Url | Should -BeNullOrEmpty
+        $response.Redirect | Should -BeNullOrEmpty
+        $response.Error | Should -Be 'no EWS URL: Mailbox unavailable'
+        Should -Invoke Invoke-WscHttp -ModuleName WebServicesClient -Times 1 -Exactly
+        $remainingErrorRecords = & (Get-Module WebServicesClient) { , $Error }
+        [object]::ReferenceEquals($errorRecords, $remainingErrorRecords) | Should -BeTrue
+    }
+
+    It 'reports a missing EWS URL when a POX response has no server message' {
+        Mock Invoke-WscHttp -ModuleName WebServicesClient {
+            [pscustomobject]@{ StatusCode = 200; Body = [Text.Encoding]::UTF8.GetBytes('<Autodiscover><Response /></Autodiscover>') }
+        }
+        $response = & (Get-Module WebServicesClient) {
+            param($HttpClient)
+            Get-WscAutodiscoverPox -Context @{
+                Config = @{ Mailbox = 'ews-test@contoso.test'; UserAgent = 'Test'; Authentication = 'Basic' }
+                Credential = $null; HttpClient = $HttpClient
+            } -BaseUrl 'https://autodiscover.contoso.test'
+        } $script:DiagnosticHttpClient
+        $response.Error | Should -Be 'no EWS URL'
+        $response.Request | Should -Be 'https://autodiscover.contoso.test/autodiscover/autodiscover.xml'
+    }
+}
+
 Describe 'Windows tokens' {
     BeforeAll { Import-Module (Join-Path $script:Root 'WebServicesClient.psd1') -Force; . (Join-Path $PSScriptRoot 'WebServicesClient.Simulator.ps1') }
 
