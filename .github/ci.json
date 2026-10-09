@@ -1,0 +1,10 @@
+{
+  "runtimeRoot": "package",
+  "testMode": "runner",
+  "testEntry": "Run-Tests.ps1",
+  "tests": [
+    "tests/WebServicesClient.Tests.ps1"
+  ],
+  "packageBuilder": "tools/New-WebServicesClientPackage.ps1",
+  "packageEntry": "Invoke-WebServicesClient.ps1"
+}
