@@ -52,3 +52,12 @@ notepad .\config\WebServicesClient.config.psd1     # the test mailbox, the EWS U
 Project page, releases and change log: https://github.com/Nico77600/WebServicesClient
 
 License: [MIT](LICENSE).
+
+## Disclaimer
+
+This Script is a Personal project.
+It's provided "AS-IS". It's not an official Microsoft product so no support can be expected from Microsoft.
+
+As any scripts you must read carefully the documentation and test it first in a Test environment before any run in Production.
+
+Use a test mailbox for the scenarios that write.
